@@ -1,0 +1,5 @@
+/pgdata
+/internal/database/migrations
+.env
+*.md
+*.log

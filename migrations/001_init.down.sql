@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS projects;
+
+DROP TABLE IF EXISTS companies;
+
+DROP TABLE IF EXISTS users;
+
+DROP TYPE IF EXISTS user_role;
