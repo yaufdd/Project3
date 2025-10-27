@@ -1,3 +1,4 @@
 .env
 *.toml
 /internal/models/
+*.pem
