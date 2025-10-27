@@ -7,12 +7,14 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/yaufdd/project3/internal/handler"
+	"github.com/yaufdd/project3/internal/middleware"
 	"github.com/yaufdd/project3/internal/repository"
 	"github.com/yaufdd/project3/internal/service"
 )
@@ -49,11 +51,27 @@ func main() {
 
 	boil.SetDB(db)
 
-	r := gin.Default()
-
 	repo := repository.NewRepository(db)
 	service := service.NewServise(repo)
 	handler := handler.NewHandler(service)
+
+	pubBytes, _ := os.ReadFile(os.Getenv("JWT_PUBLIC_PATH"))
+	pubKey, err := jwt.ParseRSAPublicKeyFromPEM(pubBytes)
+	if err != nil {
+		log.Fatalf("parse pubkey: %v", err)
+	}
+
+	jwtmw := middleware.NewJWTMW(pubKey, "project3")
+
+	r := gin.Default()
+
+	//TODO: add auth and regster with jwt. Using service layer
+
+	auth := r.Group("/api")
+	auth.Use(jwtmw.Handler())
+	{
+		//TODO: add mw endpoints
+	}
 
 	//User CRUD
 	r.POST("user", handler.CreateUser)
