@@ -3,7 +3,7 @@ CREATE TABLE project_posts (
     description TEXT NOT NULL,
     photo_url TEXT,
     like_count integer DEFAULT 0 NOT NULL, 
-    project_id INTEGER NOT NULL
+    project_id INTEGER NOT NULL REFERENCES projects(Id) ON DELETE CASCADE
 );
 
 CREATE TABLE comments (

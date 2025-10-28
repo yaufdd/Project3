@@ -3,6 +3,7 @@ CREATE TYPE user_role AS ENUM ('admin', 'investor', 'founder');
 CREATE TABLE users (
     Id SERIAL PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     role user_role NOT NULL DEFAULT 'investor',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
