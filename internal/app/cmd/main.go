@@ -65,7 +65,9 @@ func main() {
 
 	r := gin.Default()
 
-	//TODO: add auth and regster with jwt. Using service layer
+	//TODO: add auth and register with jwt. Using service layer
+	r.POST("register", handler.Registration)
+	r.POST("auth", handler.Authentication)
 
 	auth := r.Group("/api")
 	auth.Use(jwtmw.Handler())

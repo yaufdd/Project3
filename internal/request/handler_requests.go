@@ -21,3 +21,15 @@ type GetCompanyID struct {
 type GetProjectID struct {
 	Title string `json:"title"`
 }
+
+type AuthCredential struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type CreateUserRequest struct {
+	Username string `json:"username" binding:"required,min=3"`
+	Password string `json:"password" binding:"required,min=6"`
+	Email    string `json:"email" binding:"required"`
+	Role     string `json:"role" binding:"required,oneof=admin investor founder"`
+}

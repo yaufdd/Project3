@@ -8,14 +8,14 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type Service struct {
+type AuthJWT struct {
 	privateKey *rsa.PrivateKey
 	issuer     string
 	accessTTL  time.Duration
 }
 
-func NewServise(priv *rsa.PrivateKey, issuer string, ttl time.Duration) *Service {
-	return &Service{privateKey: priv, issuer: issuer, accessTTL: ttl}
+func NewAuthJWT(priv *rsa.PrivateKey, issuer string, ttl time.Duration) *AuthJWT {
+	return &AuthJWT{privateKey: priv, issuer: issuer, accessTTL: ttl}
 }
 
 type Claims struct {
@@ -24,7 +24,7 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func (s *Service) IssueAccessToken(userID int64, roles []string) (string, error) {
+func (s *AuthJWT) IssueAccessToken(userID int64, roles []string) (string, error) {
 	now := time.Now()
 	claims := Claims{
 		UserID: userID,

@@ -2,6 +2,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,15 +10,16 @@ import (
 	"github.com/yaufdd/project3/internal/request"
 )
 
+// CRUD for user
 // CreatUser - handler for creating user.
 // Used for authorization
 func (uh *Handler) CreateUser(c *gin.Context) {
-	var newUser models.User
+	var newUser *request.CreateUserRequest
 	if err := c.ShouldBindJSON(&newUser); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := uh.service.CreateUser(c, &newUser); err != nil {
+	if _, err := uh.service.CreateUser(c, newUser); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -57,7 +59,9 @@ func (uh *Handler) UpdateUsername(c *gin.Context) {
 
 // DeleteUser - handler for delete user by id
 func (uh *Handler) DeleteUser(c *gin.Context) {
-	type idForDelete struct{ ID int }
+	type idForDelete struct {
+		ID int `json:"user_id"`
+	}
 	var id idForDelete
 	if err := c.ShouldBindBodyWithJSON(&id); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -89,4 +93,33 @@ func (uh *Handler) GetUserID(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, res)
+}
+
+// RegistrationJWT registration with jwt token
+func (uh *Handler) Registration(c *gin.Context) {
+	var newUser *request.CreateUserRequest
+	if err := c.ShouldBindJSON(&newUser); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	accessToken, err := uh.service.Registration(c, newUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, fmt.Sprintf("{access_token : %s}", accessToken))
+}
+
+func (uh *Handler) Authentication(c *gin.Context) {
+	var credential *request.AuthCredential
+	if err := c.ShouldBindJSON(&credential); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	accessToken, err := uh.service.Authentication(c, credential)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, fmt.Sprintf("{access_token : %s}", accessToken))
 }

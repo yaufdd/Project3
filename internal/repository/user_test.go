@@ -9,7 +9,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
-	"github.com/yaufdd/project3/internal/models"
+	"github.com/yaufdd/project3/internal/request"
 )
 
 // TestCreateUserWithoutReturnsError positive test without error
@@ -23,11 +23,11 @@ func TestCreateUserWithoutReturnsError(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(100))
 
 	repo := NewRepository(db)
-	u := &models.User{Username: "Eric", Email: "test@ex.com", Role: "founder"}
-	err := repo.CreateUser(context.Background(), u)
+	u := &request.CreateUserRequest{Username: "Eric", Email: "test@ex.com", Role: "founder"}
+	userID, err := repo.CreateUser(context.Background(), u)
 
 	require.NoError(t, err, "failed to create user")
-	require.Equal(t, 100, u.ID)
+	require.Equal(t, 100, userID)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -44,13 +44,13 @@ func TestCreateUserTryToInsertNull(t *testing.T) {
 	}
 
 	mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "users"`)).
-		WithArgs("", "test@ex.com", "founder", sqlmock.AnyArg()).
+		WithArgs("", "123456", "test@ex.com", "founder", sqlmock.AnyArg()).
 		WillReturnError(notNullError)
 
 	repo := NewRepository(db)
-	u := &models.User{Username: "", Email: "test@ex.com", Role: "founder"}
+	u := &request.CreateUserRequest{Username: "", Password: "123456", Email: "test@ex.com", Role: "founder"}
 
-	err := repo.CreateUser(context.Background(), u)
+	_, err := repo.CreateUser(context.Background(), u)
 	require.Error(t, err)
 	var pqe *pq.Error
 	require.True(t, errors.As(err, &pqe))
@@ -78,10 +78,10 @@ func TestCreateUserInsertNotUniqueUsername(t *testing.T) {
 		WillReturnError(uniqueViolationError)
 
 	repo := NewRepository(db)
-	u := &models.User{Username: "test", Email: "test@ex.com", Role: "founder"}
+	u := &request.CreateUserRequest{Username: "test", Email: "test@ex.com", Role: "founder"}
 
 	repo.CreateUser(context.Background(), u)
-	err := repo.CreateUser(context.Background(), u)
+	_, err := repo.CreateUser(context.Background(), u)
 
 	require.Error(t, err)
 	var pqe *pq.Error
@@ -108,9 +108,9 @@ func TestCreateUserInsertRoleNotFromEnum(t *testing.T) {
 		WillReturnError(enumErr)
 
 	repo := NewRepository(db)
-	u := &models.User{Username: "test", Email: "test@ex.com", Role: "hacker"}
+	u := &request.CreateUserRequest{Username: "test", Email: "test@ex.com", Role: "hacker"}
 
-	err := repo.CreateUser(context.Background(), u)
+	_, err := repo.CreateUser(context.Background(), u)
 	require.Error(t, err)
 
 	var pqe *pq.Error
