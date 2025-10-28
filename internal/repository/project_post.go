@@ -9,29 +9,29 @@ import (
 )
 
 func (pstr *Repo) PublishProjectPost(ctx context.Context, post *models.ProjectPost) error {
-	return post.Insert(ctx, pstr.db, boil.Infer())
+	return post.Insert(ctx, pstr.DB, boil.Infer())
 }
 
 func (pstr *Repo) ReadProjectPost(ctx context.Context, id int) (*models.ProjectPost, error) {
-	return models.FindProjectPost(ctx, pstr.db, id)
+	return models.FindProjectPost(ctx, pstr.DB, id)
 }
 
 func (pstr *Repo) UpdateProjectPostDescription(ctx context.Context, newDesc request.NewDescription) error {
-	post, err := models.FindProjectPost(ctx, pstr.db, newDesc.ID)
+	post, err := models.FindProjectPost(ctx, pstr.DB, newDesc.ID)
 	if err != nil {
 		return err
 	}
 
 	post.Description = newDesc.Description
 
-	_, err = post.Update(ctx, pstr.db, boil.Whitelist("description"))
+	_, err = post.Update(ctx, pstr.DB, boil.Whitelist("description"))
 	return err
 }
 
 func (pstr *Repo) DeleteProjectPost(ctx context.Context, id int) (int64, error) {
-	post, err := models.FindProjectPost(ctx, pstr.db, id)
+	post, err := models.FindProjectPost(ctx, pstr.DB, id)
 	if err != nil {
 		return 0, err
 	}
-	return post.Delete(ctx, pstr.db)
+	return post.Delete(ctx, pstr.DB)
 }

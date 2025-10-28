@@ -8,5 +8,5 @@ import (
 )
 
 func (cmr *Repo) AddComment(ctx context.Context, comment *models.Comment) error {
-	return comment.Insert(ctx, cmr.db, boil.Infer())
+	return comment.Insert(ctx, cmr.DB, boil.Infer())
 }

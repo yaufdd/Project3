@@ -10,39 +10,39 @@ import (
 
 // AddProject add project to db
 func (pr *Repo) AddProject(ctx context.Context, project *models.Project) error {
-	return project.Insert(ctx, pr.db, boil.Infer())
+	return project.Insert(ctx, pr.DB, boil.Infer())
 }
 
 // ReadProject get project info by id
 func (pr *Repo) ReadProject(ctx context.Context, id int) (*models.Project, error) {
-	return models.FindProject(ctx, pr.db, id)
+	return models.FindProject(ctx, pr.DB, id)
 }
 
 // UpdateProject for update project title. Need to send full json of project object,
 // including id. Without ID info wont be updated
 func (pr *Repo) UpdateProjectTitle(ctx context.Context, newInfoProject *models.Project) error {
-	project, err := models.FindProject(ctx, pr.db, newInfoProject.ID)
+	project, err := models.FindProject(ctx, pr.DB, newInfoProject.ID)
 	if err != nil {
 		return err
 	}
 
 	project.Title = newInfoProject.Title
 
-	_, err = project.Update(ctx, pr.db, boil.Whitelist("title", "description", "goal_amount", "collected_amount"))
+	_, err = project.Update(ctx, pr.DB, boil.Whitelist("title", "description", "goal_amount", "collected_amount"))
 
 	return err
 }
 
 func (pr *Repo) DeleteProject(ctx context.Context, id int) (int64, error) {
-	project, err := models.FindProject(ctx, pr.db, id)
+	project, err := models.FindProject(ctx, pr.DB, id)
 	if err != nil {
 		return 0, err
 	}
-	return project.Delete(ctx, pr.db)
+	return project.Delete(ctx, pr.DB)
 }
 
 func (pr *Repo) GetProjectID(ctx context.Context, reqeust request.GetProjectID) (int, error) {
-	project, err := models.Projects(models.ProjectWhere.Title.EQ(reqeust.Title)).One(ctx, pr.db)
+	project, err := models.Projects(models.ProjectWhere.Title.EQ(reqeust.Title)).One(ctx, pr.DB)
 	if err != nil {
 		return 0, err
 	}

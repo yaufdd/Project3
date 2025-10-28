@@ -9,35 +9,35 @@ import (
 )
 
 func (cr *Repo) AddCompanyToFounder(ctx context.Context, company *models.Company) error {
-	return company.Insert(ctx, cr.db, boil.Infer())
+	return company.Insert(ctx, cr.DB, boil.Infer())
 }
 
 func (cr *Repo) ReadCompany(ctx context.Context, id int) (*models.Company, error) {
-	return models.FindCompany(ctx, cr.db, id)
+	return models.FindCompany(ctx, cr.DB, id)
 }
 
 func (cr *Repo) UpdateCompanyname(ctx context.Context, newCompanyInfo *models.Company) error {
-	company, err := models.FindCompany(ctx, cr.db, newCompanyInfo.ID)
+	company, err := models.FindCompany(ctx, cr.DB, newCompanyInfo.ID)
 	if err != nil {
 		return err
 	}
 	company.Name = newCompanyInfo.Name
 
-	_, err = company.Update(ctx, cr.db, boil.Whitelist("name"))
+	_, err = company.Update(ctx, cr.DB, boil.Whitelist("name"))
 
 	return err
 }
 
 func (cr *Repo) DeleteCompany(ctx context.Context, id int) (int64, error) {
-	company, err := models.FindCompany(ctx, cr.db, id)
+	company, err := models.FindCompany(ctx, cr.DB, id)
 	if err != nil {
 		return 0, nil
 	}
-	return company.Delete(ctx, cr.db)
+	return company.Delete(ctx, cr.DB)
 }
 
 func (cr *Repo) GetCompanyID(ctx context.Context, request request.GetCompanyID) (int, error) {
-	company, err := models.Companies(models.CompanyWhere.Name.EQ(request.CompanyName)).One(ctx, cr.db)
+	company, err := models.Companies(models.CompanyWhere.Name.EQ(request.CompanyName)).One(ctx, cr.DB)
 	if err != nil {
 		return 0, err
 	}

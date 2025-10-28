@@ -9,13 +9,13 @@ import (
 )
 
 func (lr *Repo) LikeProjectPost(ctx context.Context, likeRequest request.LikePost) error {
-	post, err := models.FindProjectPost(ctx, lr.db, likeRequest.PostID)
+	post, err := models.FindProjectPost(ctx, lr.DB, likeRequest.PostID)
 	if err != nil {
 		return err
 	}
 	post.LikeCount += 1
 
-	_, err = post.Update(ctx, lr.db, boil.Whitelist("like_count"))
+	_, err = post.Update(ctx, lr.DB, boil.Whitelist("like_count"))
 	return err
 
 }
