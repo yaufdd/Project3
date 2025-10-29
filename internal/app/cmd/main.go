@@ -65,48 +65,50 @@ func main() {
 
 	r := gin.Default()
 
-	//TODO: add auth and register with jwt. Using service layer
 	r.POST("register", handler.Registration)
 	r.POST("auth", handler.Authentication)
 
-	auth := r.Group("/api")
-	auth.Use(jwtmw.Handler())
-	{
-		//TODO: add mw endpoints
-	}
-
-	//User CRUD
-	r.POST("user", handler.CreateUser)
-	r.GET("user", handler.ReadUser)
-	r.PUT("user", handler.UpdateUsername)
-	r.DELETE("user", handler.DeleteUser)
-
-	//Company CRUD
-	r.POST("company", handler.AddCompanyToFounder)
-	r.GET("company", handler.ReadCompany)
-	r.PUT("company", handler.UpdateCompanyname)
-	r.DELETE("company", handler.DeleteCompany)
-
-	//Project CRUD
-	r.POST("project", handler.AddProject)
-	r.GET("project", handler.ReadProject)
-	r.PUT("project", handler.UpdateProjectTitle)
-	r.DELETE("project", handler.DeleteProject)
-
-	//Project post CRUD
-	r.POST("project-post", handler.PublishProjectPost)
-	r.GET("project-post", handler.ReadProjectPost)
-	r.PUT("project-post", handler.UpdateProjectPostDescription)
-	r.DELETE("project-post", handler.DeleteProjectPost)
-
-	//TODO: make handler return id for each entity
+	// return id for each entity
 	r.GET("user-id", handler.GetUserID)
 	r.GET("company-id", handler.GetCompanyID)
 	r.GET("project-id", handler.GetProjectID)
 
-	//Post intercations
-	r.POST("comment", handler.AddComment)
-	r.PUT("like-project-post", handler.LikeProjectPost)
+	api := r.Group("api")
+	api.Use(jwtmw.Handler())
+	{
+		//Company CRUD
+		api.POST("company", handler.AddCompanyToFounder)
+		api.GET("company", handler.ReadCompany)
+		api.PUT("company", handler.UpdateCompanyname)
+		api.DELETE("company", handler.DeleteCompany)
+
+		//Project CRUD
+		api.POST("project", handler.AddProject)
+		api.GET("project", handler.ReadProject)
+		api.PUT("project", handler.UpdateProjectTitle)
+		api.DELETE("project", handler.DeleteProject)
+
+		//Project post CRUD
+		api.POST("project-post", handler.PublishProjectPost)
+		api.GET("project-post", handler.ReadProjectPost)
+		api.PUT("project-post", handler.UpdateProjectPostDescription)
+		api.DELETE("project-post", handler.DeleteProjectPost)
+
+		//Post intercations
+		api.POST("comment", handler.AddComment)
+		api.PUT("like-project-post", handler.LikeProjectPost)
+	}
+
+	admin := api.Group("/admin")
+	admin.Use(jwtmw.RequiredRoles("admin"))
+	{
+		//TODO: add mw endpoints
+		//User CRUD
+		admin.POST("user", handler.CreateUser)
+		admin.GET("user", handler.ReadUser)
+		admin.PUT("user", handler.UpdateUsername)
+		admin.DELETE("user", handler.DeleteUser)
+	}
 
 	//TODO: donate to project
 	//TODO: make test for all handlers
