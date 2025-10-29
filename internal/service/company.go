@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/yaufdd/project3/internal/models"
-	"github.com/yaufdd/project3/internal/request"
 )
 
 func (cs *Servise) AddCompanyToFounder(ctx context.Context, company *models.Company) error {
@@ -23,6 +22,6 @@ func (cs *Servise) DeleteCompany(ctx context.Context, id int) (int64, error) {
 	return cs.repo.DeleteCompany(ctx, id)
 }
 
-func (cs *Servise) GetCompanyID(ctx context.Context, request request.GetCompanyID) (int, error) {
-	return cs.repo.GetCompanyID(ctx, request)
+func (cs *Servise) GetCompanyID(ctx context.Context, companyName string) (int, error) {
+	return cs.repo.GetCompanyID(ctx, companyName)
 }

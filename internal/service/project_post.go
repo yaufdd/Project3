@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/yaufdd/project3/internal/models"
-	"github.com/yaufdd/project3/internal/request"
 )
 
 func (psts *Servise) PublishProjectPost(ctx context.Context, post *models.ProjectPost) error {
@@ -15,8 +14,8 @@ func (psts *Servise) ReadProjectPost(ctx context.Context, id int) (*models.Proje
 	return psts.repo.ReadProjectPost(ctx, id)
 }
 
-func (psts *Servise) UpdateProjectPostDescription(ctx context.Context, newDesc request.NewDescription) error {
-	return psts.repo.UpdateProjectPostDescription(ctx, newDesc)
+func (psts *Servise) UpdateProjectPostDescription(ctx context.Context, postID int, newDescriptin string) error {
+	return psts.repo.UpdateProjectPostDescription(ctx, postID, newDescriptin)
 }
 
 func (psts *Servise) DeleteProjectPost(ctx context.Context, id int) (int64, error) {

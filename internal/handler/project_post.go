@@ -5,17 +5,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/yaufdd/project3/internal/models"
-	"github.com/yaufdd/project3/internal/request"
 )
 
 // PublishProjectPost - handler for publish project post
 func (psth *Handler) PublishProjectPost(c *gin.Context) {
-	var publishReq *models.ProjectPost
-	if err := c.ShouldBindJSON(&publishReq); err != nil {
+	var request *models.ProjectPost
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
-	if err := psth.service.PublishProjectPost(c, publishReq); err != nil {
+	if err := psth.service.PublishProjectPost(c, request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
@@ -24,13 +23,15 @@ func (psth *Handler) PublishProjectPost(c *gin.Context) {
 
 // ReadProjectPost a handler to get project post info
 func (psth *Handler) ReadProjectPost(c *gin.Context) {
-	type idForProjectPost struct{ ID int }
-	var id idForProjectPost
-	if err := c.ShouldBindJSON(&id); err != nil {
+	type readProjectPost struct {
+		PostID int `json:"post_id" binding:"required"`
+	}
+	request := readProjectPost{}
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
-	post, err := psth.service.ReadProjectPost(c, id.ID)
+	post, err := psth.service.ReadProjectPost(c, request.PostID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
@@ -40,12 +41,16 @@ func (psth *Handler) ReadProjectPost(c *gin.Context) {
 
 // UpdateProjectPostDescription - handler to update project post description
 func (psth *Handler) UpdateProjectPostDescription(c *gin.Context) {
-	var newDesc request.NewDescription
-	if err := c.ShouldBindJSON(&newDesc); err != nil {
+	type updateProjectPostDescription struct {
+		PostID      int    `json:"post_id" binding:"required"`
+		Description string `json:"desc" binding:"required"`
+	}
+	request := updateProjectPostDescription{}
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
-	err := psth.service.UpdateProjectPostDescription(c, newDesc)
+	err := psth.service.UpdateProjectPostDescription(c, request.PostID, request.Description)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
@@ -55,13 +60,15 @@ func (psth *Handler) UpdateProjectPostDescription(c *gin.Context) {
 
 // DeleteProjectPost - handler to delete project post
 func (psth *Handler) DeleteProjectPost(c *gin.Context) {
-	type idForDelete struct{ ID int }
-	var id idForDelete
-	if err := c.ShouldBindJSON(&id); err != nil {
+	type deleteProjectPost struct {
+		PostID int
+	}
+	request := deleteProjectPost{}
+	if err := c.ShouldBindJSON(request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
-	res, err := psth.service.DeleteProjectPost(c, id.ID)
+	res, err := psth.service.DeleteProjectPost(c, request.PostID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return

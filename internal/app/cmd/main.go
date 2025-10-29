@@ -79,7 +79,7 @@ func main() {
 		//Company CRUD
 		api.POST("company", handler.AddCompanyToFounder)
 		api.GET("company", handler.ReadCompany)
-		api.PUT("company", handler.UpdateCompanyname)
+		api.PUT("company", handler.UpdateCompanyName)
 		api.DELETE("company", handler.DeleteCompany)
 
 		//Project CRUD

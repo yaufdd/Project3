@@ -8,12 +8,11 @@ import (
 
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/yaufdd/project3/internal/models"
-	"github.com/yaufdd/project3/internal/request"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // CreateUser save data of new user into Users table
-func (ur *Repo) CreateUser(ctx context.Context, newUser *request.CreateUserRequest) (int, error) {
+func (ur *Repo) CreateUser(ctx context.Context, newUser *models.User) (int, error) {
 	if newUser.Password == "" {
 		return 0, errors.New("invalid format of credential")
 	}
@@ -41,13 +40,13 @@ func (ur *Repo) ReadUser(ctx context.Context, userID int) (*models.User, error) 
 }
 
 // UpdateUser chages user. Need to send full json object of user.
-func (ur *Repo) UpdateUsername(ctx context.Context, newUserInfo *models.User) error {
-	user, err := models.FindUser(ctx, ur.DB, newUserInfo.ID)
+func (ur *Repo) UpdateUsername(ctx context.Context, userID int, newUsername string) error {
+	user, err := models.FindUser(ctx, ur.DB, userID)
 	if err != nil {
 		return err
 	}
 
-	user.Username = newUserInfo.Username
+	user.Username = newUsername
 	_, err = user.Update(ctx, ur.DB, boil.Whitelist("username"))
 
 	return err
@@ -63,22 +62,22 @@ func (ur *Repo) DeleteUser(ctx context.Context, id int) (int64, error) {
 	return user.Delete(ctx, ur.DB)
 }
 
-func (ur *Repo) GetUserID(ctx context.Context, request request.GetUserID) (int, error) {
-	user, err := models.Users(models.UserWhere.Username.EQ(request.Username)).One(ctx, ur.DB)
+func (ur *Repo) GetUserID(ctx context.Context, username string) (int, error) {
+	user, err := models.Users(models.UserWhere.Username.EQ(username)).One(ctx, ur.DB)
 	if err != nil {
 		return 0, err
 	}
 	return user.ID, err
 }
 
-func (ur *Repo) AuthenticateUser(ctx context.Context, credential *request.AuthCredential) (*models.User, error) {
-	user, err := models.Users(models.UserWhere.Username.EQ(credential.Username)).One(ctx, ur.DB)
+func (ur *Repo) AuthenticateUser(ctx context.Context, username, password string) (*models.User, error) {
+	user, err := models.Users(models.UserWhere.Username.EQ(username)).One(ctx, ur.DB)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.New("invalid username or password")
 		}
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(credential.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return nil, errors.New("invalid username or password")
 	}
 	return user, err

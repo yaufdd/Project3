@@ -5,13 +5,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/yaufdd/project3/internal/models"
-	"github.com/yaufdd/project3/internal/request"
 )
 
 // AddCompanyToFounder - handler to add table
 func (ch *Handler) AddCompanyToFounder(c *gin.Context) {
-	var newCompany *models.Company
-	if err := c.ShouldBindJSON(&newCompany); err != nil {
+	var request *models.Company
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -24,12 +23,14 @@ func (ch *Handler) AddCompanyToFounder(c *gin.Context) {
 
 // ReadCompany - handler to Get company info
 func (ch *Handler) ReadCompany(c *gin.Context) {
-	type idForRead struct{ ID int }
-	var id idForRead
-	if err := c.ShouldBindJSON(&id); err != nil {
+	type ReadCompany struct {
+		CompanyID int `json:"company_id" binding:"required"`
+	}
+	request := ReadCompany{}
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
-	company, err := ch.service.ReadCompany(c, id.ID)
+	company, err := ch.service.ReadCompany(c, request.CompanyID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
@@ -38,9 +39,13 @@ func (ch *Handler) ReadCompany(c *gin.Context) {
 }
 
 // UpdateCompanyname - handler to update company name
-func (ch *Handler) UpdateCompanyname(c *gin.Context) {
-	var newCompanyInfo *models.Company
-	if err := c.ShouldBindJSON(&newCompanyInfo); err != nil {
+func (ch *Handler) UpdateCompanyName(c *gin.Context) {
+	type UpdateCompanyName struct {
+		CompanyName string `json:"name" binding:"required"`
+		CompanyID   int    `json:"company_id" binding:"required"`
+	}
+	request := UpdateCompanyName{}
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 	if err := ch.service.UpdateCompanyname(c, newCompanyInfo); err != nil {
@@ -53,9 +58,11 @@ func (ch *Handler) UpdateCompanyname(c *gin.Context) {
 
 // DeleteCompany - handler to delete company
 func (ch *Handler) DeleteCompany(c *gin.Context) {
-	type idForDelete struct{ ID int }
-	var id idForDelete
-	if err := c.ShouldBindJSON(&id); err != nil {
+	type deleteCompany struct {
+		CompanyID int `json:"company_id" binding:"required"`
+	}
+	request := deleteCompany{}
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 	res, err := ch.service.DeleteCompany(c, id.ID)
@@ -71,11 +78,14 @@ func (ch *Handler) DeleteCompany(c *gin.Context) {
 
 // GetCompanyID - handler to get company ID by name
 func (ch *Handler) GetCompanyID(c *gin.Context) {
-	var request request.GetCompanyID
+	type GetCompanyID struct {
+		CompanyName string `json:"company_name"`
+	}
+	request := GetCompanyID{}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
-	res, err := ch.service.GetCompanyID(c, request)
+	res, err := ch.service.GetCompanyID(c, request.CompanyName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

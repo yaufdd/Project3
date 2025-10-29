@@ -7,19 +7,18 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/yaufdd/project3/internal/models"
-	"github.com/yaufdd/project3/internal/request"
 )
 
 // CRUD for user
 // CreatUser - handler for creating user.
 // Used for authorization
 func (uh *Handler) CreateUser(c *gin.Context) {
-	var newUser *request.CreateUserRequest
-	if err := c.ShouldBindJSON(&newUser); err != nil {
+	var request *models.User
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if _, err := uh.service.CreateUser(c, newUser); err != nil {
+	if _, err := uh.service.CreateUser(c, request); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -29,13 +28,15 @@ func (uh *Handler) CreateUser(c *gin.Context) {
 
 // ReadUser - handler for get user info by ID
 func (uh *Handler) ReadUser(c *gin.Context) {
-	type ifForRead struct{ ID int }
-	var r ifForRead
-	if err := c.ShouldBindJSON(&r); err != nil {
+	type readUser struct {
+		UserID int `json:"user_id" binding:"required"`
+	}
+	request := readUser{}
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	user, err := uh.service.ReadUser(c, r.ID)
+	user, err := uh.service.ReadUser(c, request.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -43,14 +44,18 @@ func (uh *Handler) ReadUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"user": user})
 }
 
-// UpdateUser - handler for update user. Need to send full user json object
+// UpdateUser - handler for update user. Need to user id
 func (uh *Handler) UpdateUsername(c *gin.Context) {
-	var newUserInfo *models.User
-	if err := c.ShouldBindBodyWithJSON(&newUserInfo); err != nil {
+	type updateUsername struct {
+		UserID      int    `json:"user_id" binding:"required"`
+		NewUsername string `json:"new_uname" binding:"required"`
+	}
+	request := updateUsername{}
+	if err := c.ShouldBindBodyWithJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := uh.service.UpdateUsername(c, newUserInfo); err != nil {
+	if err := uh.service.UpdateUsername(c, request.UserID, request.NewUsername); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -59,15 +64,15 @@ func (uh *Handler) UpdateUsername(c *gin.Context) {
 
 // DeleteUser - handler for delete user by id
 func (uh *Handler) DeleteUser(c *gin.Context) {
-	type idForDelete struct {
-		ID int `json:"user_id"`
+	type deleteUser struct {
+		UserID int
 	}
-	var id idForDelete
-	if err := c.ShouldBindBodyWithJSON(&id); err != nil {
+	request := deleteUser{}
+	if err := c.ShouldBindBodyWithJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	res, err := uh.service.DeleteUser(c, id.ID)
+	res, err := uh.service.DeleteUser(c, request.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -82,12 +87,15 @@ func (uh *Handler) DeleteUser(c *gin.Context) {
 
 // GetUserID - handler to get user ID
 func (uh *Handler) GetUserID(c *gin.Context) {
-	var request request.GetUserID
+	type getUserID struct {
+		Username string `json:"username" binding:"required"`
+	}
+	request := getUserID{}
 	if err := c.ShouldBindBodyWithJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errir": err.Error()})
 		return
 	}
-	res, err := uh.service.GetUserID(c, request)
+	res, err := uh.service.GetUserID(c, request.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -97,12 +105,12 @@ func (uh *Handler) GetUserID(c *gin.Context) {
 
 // RegistrationJWT registration with jwt token
 func (uh *Handler) Registration(c *gin.Context) {
-	var newUser *request.CreateUserRequest
-	if err := c.ShouldBindJSON(&newUser); err != nil {
+	var request *models.User
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	accessToken, err := uh.service.Registration(c, newUser)
+	accessToken, err := uh.service.Registration(c, request)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -111,12 +119,16 @@ func (uh *Handler) Registration(c *gin.Context) {
 }
 
 func (uh *Handler) Authentication(c *gin.Context) {
-	var credential *request.AuthCredential
-	if err := c.ShouldBindJSON(&credential); err != nil {
+	type AuthCredential struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	request := AuthCredential{}
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	accessToken, err := uh.service.Authentication(c, credential)
+	accessToken, err := uh.service.Authentication(c, request.Username, request.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

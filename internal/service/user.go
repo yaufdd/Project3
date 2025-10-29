@@ -10,31 +10,30 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/yaufdd/project3/internal/auth"
 	"github.com/yaufdd/project3/internal/models"
-	"github.com/yaufdd/project3/internal/request"
 )
 
 // CRUD for user
-func (us *Servise) CreateUser(ctx context.Context, user *request.CreateUserRequest) (int, error) {
-	return us.repo.CreateUser(ctx, user)
+func (us *Servise) CreateUser(ctx context.Context, newUser *models.User) (int, error) {
+	return us.repo.CreateUser(ctx, newUser)
 }
 
 func (us *Servise) ReadUser(ctx context.Context, id int) (*models.User, error) {
 	return us.repo.ReadUser(ctx, id)
 }
 
-func (us *Servise) UpdateUsername(ctx context.Context, newUserInfo *models.User) error {
-	return us.repo.UpdateUsername(ctx, newUserInfo)
+func (us *Servise) UpdateUsername(ctx context.Context, userID int, newUsername string) error {
+	return us.repo.UpdateUsername(ctx, userID, newUsername)
 }
 
 func (us *Servise) DeleteUser(ctx context.Context, id int) (int64, error) {
 	return us.repo.DeleteUser(ctx, id)
 }
 
-func (us *Servise) GetUserID(ctx context.Context, request request.GetUserID) (int, error) {
-	return us.repo.GetUserID(ctx, request)
+func (us *Servise) GetUserID(ctx context.Context, username string) (int, error) {
+	return us.repo.GetUserID(ctx, username)
 }
 
-func (us *Servise) Registration(ctx context.Context, newUser *request.CreateUserRequest) (string, error) {
+func (us *Servise) Registration(ctx context.Context, newUser *models.User) (string, error) {
 	tx, err := us.repo.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
@@ -66,8 +65,8 @@ func (us *Servise) Registration(ctx context.Context, newUser *request.CreateUser
 
 }
 
-func (us *Servise) Authentication(ctx context.Context, credential *request.AuthCredential) (string, error) {
-	user, err := us.repo.AuthenticateUser(ctx, credential)
+func (us *Servise) Authentication(ctx context.Context, username, password string) (string, error) {
+	user, err := us.repo.AuthenticateUser(ctx, username, password)
 	if err != nil {
 		return "", err
 	}

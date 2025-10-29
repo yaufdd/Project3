@@ -5,11 +5,10 @@ import (
 
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/yaufdd/project3/internal/models"
-	"github.com/yaufdd/project3/internal/request"
 )
 
-func (lr *Repo) LikeProjectPost(ctx context.Context, likeRequest request.LikePost) error {
-	post, err := models.FindProjectPost(ctx, lr.DB, likeRequest.PostID)
+func (lr *Repo) LikeProjectPost(ctx context.Context, postID int) error {
+	post, err := models.FindProjectPost(ctx, lr.DB, postID)
 	if err != nil {
 		return err
 	}

@@ -5,7 +5,6 @@ import (
 
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/yaufdd/project3/internal/models"
-	"github.com/yaufdd/project3/internal/request"
 )
 
 func (pstr *Repo) PublishProjectPost(ctx context.Context, post *models.ProjectPost) error {
@@ -16,13 +15,13 @@ func (pstr *Repo) ReadProjectPost(ctx context.Context, id int) (*models.ProjectP
 	return models.FindProjectPost(ctx, pstr.DB, id)
 }
 
-func (pstr *Repo) UpdateProjectPostDescription(ctx context.Context, newDesc request.NewDescription) error {
-	post, err := models.FindProjectPost(ctx, pstr.DB, newDesc.ID)
+func (pstr *Repo) UpdateProjectPostDescription(ctx context.Context, postID int, newDescription string) error {
+	post, err := models.FindProjectPost(ctx, pstr.DB, postID, newDescription)
 	if err != nil {
 		return err
 	}
 
-	post.Description = newDesc.Description
+	post.Description = newDescription
 
 	_, err = post.Update(ctx, pstr.DB, boil.Whitelist("description"))
 	return err
