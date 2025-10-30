@@ -2,3 +2,5 @@
 *.toml
 /internal/models/
 *.pem
+pgdata
+redisdata
