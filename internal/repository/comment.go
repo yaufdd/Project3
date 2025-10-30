@@ -7,6 +7,6 @@ import (
 	"github.com/yaufdd/project3/internal/models"
 )
 
-func (cmr *Repo) AddComment(ctx context.Context, comment *models.Comment) error {
-	return comment.Insert(ctx, cmr.DB, boil.Infer())
+func (cmr *Repo) InsertCommentTable(ctx context.Context, comment *models.Comment) error {
+	return comment.Insert(ctx, cmr.db, boil.Infer())
 }

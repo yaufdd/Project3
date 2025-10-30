@@ -7,11 +7,11 @@ import (
 )
 
 func (psts *Servise) PublishProjectPost(ctx context.Context, post *models.ProjectPost) error {
-	return psts.repo.PublishProjectPost(ctx, post)
+	return psts.repo.InsertProjectPostTable(ctx, post)
 }
 
 func (psts *Servise) ReadProjectPost(ctx context.Context, id int) (*models.ProjectPost, error) {
-	return psts.repo.ReadProjectPost(ctx, id)
+	return psts.repo.GetProjectPostInfo(ctx, id)
 }
 
 func (psts *Servise) UpdateProjectPostDescription(ctx context.Context, postID int, newDescriptin string) error {

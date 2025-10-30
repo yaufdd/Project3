@@ -4,21 +4,38 @@ package service
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/yaufdd/project3/internal/auth"
 	"github.com/yaufdd/project3/internal/models"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // CRUD for user
 func (us *Servise) CreateUser(ctx context.Context, newUser *models.User) (int, error) {
-	return us.repo.CreateUser(ctx, newUser)
+	if newUser.Password == "" {
+		return 0, errors.New("invalid format of credential")
+	}
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return 0, err
+	}
+	newUser.Password = string(hashedPassword)
+	u := models.User{
+		Username: newUser.Username,
+		Password: newUser.Password,
+		Email:    newUser.Email,
+		Role:     newUser.Role,
+	}
+	return us.repo.InsertUserTable(ctx, &u)
 }
 
 func (us *Servise) ReadUser(ctx context.Context, id int) (*models.User, error) {
-	return us.repo.ReadUser(ctx, id)
+	return us.repo.GetUserInfo(ctx, id)
 }
 
 func (us *Servise) UpdateUsername(ctx context.Context, userID int, newUsername string) error {
@@ -30,11 +47,18 @@ func (us *Servise) DeleteUser(ctx context.Context, id int) (int64, error) {
 }
 
 func (us *Servise) GetUserID(ctx context.Context, username string) (int, error) {
-	return us.repo.GetUserID(ctx, username)
+	user, err := us.repo.GetUserInfoByUsername(ctx, username)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, errors.New("invalid username or password")
+		}
+	}
+	return user.ID, err
+
 }
 
 func (us *Servise) Registration(ctx context.Context, newUser *models.User) (string, error) {
-	tx, err := us.repo.DB.BeginTx(ctx, nil)
+	tx, err := us.repo.Transaction(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -44,7 +68,7 @@ func (us *Servise) Registration(ctx context.Context, newUser *models.User) (stri
 		}
 	}()
 
-	userID, err := us.repo.CreateUser(ctx, newUser)
+	userID, err := us.CreateUser(ctx, newUser)
 	if err != nil {
 		return "", err
 	}
@@ -66,9 +90,14 @@ func (us *Servise) Registration(ctx context.Context, newUser *models.User) (stri
 }
 
 func (us *Servise) Authentication(ctx context.Context, username, password string) (string, error) {
-	user, err := us.repo.AuthenticateUser(ctx, username, password)
+	user, err := us.repo.GetUserInfoByUsername(ctx, username)
 	if err != nil {
-		return "", err
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", errors.New("invalid username or password")
+		}
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		return "", errors.New("invalid username or password")
 	}
 
 	privBytes, _ := os.ReadFile(os.Getenv("JWT_PRIVATE_PATH"))

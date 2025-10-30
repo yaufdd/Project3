@@ -7,5 +7,5 @@ import (
 )
 
 func (cms *Servise) AddComment(ctx context.Context, comment *models.Comment) error {
-	return cms.repo.AddComment(ctx, comment)
+	return cms.repo.InsertCommentTable(ctx, comment)
 }

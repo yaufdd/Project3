@@ -7,30 +7,41 @@ import (
 	"github.com/yaufdd/project3/internal/models"
 )
 
-func (pstr *Repo) PublishProjectPost(ctx context.Context, post *models.ProjectPost) error {
-	return post.Insert(ctx, pstr.DB, boil.Infer())
+func (pstr *Repo) InsertProjectPostTable(ctx context.Context, post *models.ProjectPost) error {
+	return post.Insert(ctx, pstr.db, boil.Infer())
 }
 
-func (pstr *Repo) ReadProjectPost(ctx context.Context, id int) (*models.ProjectPost, error) {
-	return models.FindProjectPost(ctx, pstr.DB, id)
+func (pstr *Repo) GetProjectPostInfo(ctx context.Context, id int) (*models.ProjectPost, error) {
+	return models.FindProjectPost(ctx, pstr.db, id)
 }
 
 func (pstr *Repo) UpdateProjectPostDescription(ctx context.Context, postID int, newDescription string) error {
-	post, err := models.FindProjectPost(ctx, pstr.DB, postID, newDescription)
+	post, err := models.FindProjectPost(ctx, pstr.db, postID, newDescription)
 	if err != nil {
 		return err
 	}
 
 	post.Description = newDescription
 
-	_, err = post.Update(ctx, pstr.DB, boil.Whitelist("description"))
+	_, err = post.Update(ctx, pstr.db, boil.Whitelist("description"))
 	return err
 }
 
 func (pstr *Repo) DeleteProjectPost(ctx context.Context, id int) (int64, error) {
-	post, err := models.FindProjectPost(ctx, pstr.DB, id)
+	post, err := models.FindProjectPost(ctx, pstr.db, id)
 	if err != nil {
 		return 0, err
 	}
-	return post.Delete(ctx, pstr.DB)
+	return post.Delete(ctx, pstr.db)
+}
+
+func (pstr *Repo) UpdateLikeCount(ctx context.Context, id int) error {
+	post, err := models.FindProjectPost(ctx, pstr.db, id)
+	if err != nil {
+		return err
+	}
+	post.LikeCount += 1
+
+	_, err = post.Update(ctx, pstr.db, boil.Whitelist("like_count"))
+	return err
 }
