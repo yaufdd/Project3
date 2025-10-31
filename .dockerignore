@@ -1,4 +1,4 @@
-/pgdata
+/pg_data
 /internal/database/migrations
 .env
 *.md
