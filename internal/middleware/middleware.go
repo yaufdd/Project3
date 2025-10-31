@@ -28,7 +28,7 @@ func (m *JWTMW) Handler() gin.HandlerFunc {
 
 		raw := strings.TrimPrefix(h, "Bearer ")
 
-		var claims auth.Claims
+		var claims auth.AcessClaims
 		tok, err := jwt.ParseWithClaims(raw, &claims, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 				return nil, fmt.Errorf("unexpected sign method")

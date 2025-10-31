@@ -6,36 +6,66 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type AuthJWT struct {
 	privateKey *rsa.PrivateKey
 	issuer     string
 	accessTTL  time.Duration
+	refreshTTL time.Duration
 }
 
 func NewAuthJWT(priv *rsa.PrivateKey, issuer string, ttl time.Duration) *AuthJWT {
 	return &AuthJWT{privateKey: priv, issuer: issuer, accessTTL: ttl}
 }
 
-type Claims struct {
+type AcessClaims struct {
 	UserID int64 `json:"uid"`
 	Roles  []string
 	jwt.RegisteredClaims
 }
 
-func (s *AuthJWT) IssueAccessToken(userID int64, roles []string) (string, error) {
+type RefreshClaims struct {
+	UID  int64 `json:"uid"`
+	Type string
+	JTI  string
+	jwt.RegisteredClaims
+}
+
+func (a *AuthJWT) IssueAccessToken(userID int64, roles []string) (string, error) {
 	now := time.Now()
-	claims := Claims{
+	claims := AcessClaims{
 		UserID: userID,
 		Roles:  roles,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    s.issuer,
+			Issuer:    a.issuer,
 			Subject:   fmt.Sprint(userID),
 			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(s.accessTTL)),
+			ExpiresAt: jwt.NewNumericDate(now.Add(a.accessTTL)),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	return token.SignedString(s.privateKey)
+	return token.SignedString(a.privateKey)
+}
+
+func (a *AuthJWT) IssueRefreshToken(uid int64) (token string, jti string, exp time.Time, err error) {
+	now := time.Now()
+	exp = now.Add(a.refreshTTL)
+	jti = uuid.NewString()
+
+	claims := RefreshClaims{
+		UID:  uid,
+		Type: "refresh",
+		JTI:  jti,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    a.issuer,
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(exp),
+		},
+	}
+
+	t := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	signed, err := t.SignedString(a.privateKey)
+	return signed, jti, exp, err
 }
