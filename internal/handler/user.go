@@ -2,7 +2,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -135,10 +134,17 @@ func (uh *Handler) Authentication(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	accessToken, err := uh.service.Authentication(c, request.Username, request.Password)
+	accessToken, refreshToken, err := uh.service.Authentication(c, request.Username, request.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, fmt.Sprintf("{access_token : %s}", accessToken))
+	type tokensResponce struct {
+		AccessToken  string
+		RefreshToken string
+	}
+	c.JSON(http.StatusOK, tokensResponce{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	})
 }

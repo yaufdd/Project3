@@ -6,11 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"os"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/yaufdd/project3/internal/auth"
 	"github.com/yaufdd/project3/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -60,28 +56,7 @@ func (us *Servise) Registration(ctx context.Context, newUser *models.User) (stri
 	return authJWTFacade.Registration(ctx, newUser)
 }
 
-func (us *Servise) Authentication(ctx context.Context, username, password string) (string, error) {
-	user, err := us.repo.GetUserInfoByUsername(ctx, username)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return "", errors.New("invalid username or password")
-		}
-	}
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return "", errors.New("invalid username or password")
-	}
-
-	privBytes, _ := os.ReadFile(os.Getenv("JWT_PRIVATE_PATH"))
-	privKey, err := jwt.ParseRSAPrivateKeyFromPEM(privBytes)
-	if err != nil {
-		return "", err
-	}
-	accessTokenDur := 15 * time.Minute
-	auth := auth.NewAuthJWT(privKey, "project3", accessTokenDur)
-
-	accessToken, err := auth.IssueAccessToken(int64(user.ID), []string{user.Role})
-	if err != nil {
-		return "", err
-	}
-	return accessToken, err
+func (us *Servise) Authentication(ctx context.Context, reqUsername, reqPassword string) (string, string, error) {
+	authJWTFacade := NewAuthJWTFacade(us)
+	return authJWTFacade.Authentication(ctx, reqUsername, reqPassword)
 }
