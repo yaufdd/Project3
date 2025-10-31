@@ -18,7 +18,7 @@ func (uh *Handler) CreateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if _, err := uh.service.CreateUser(c, request); err != nil {
+	if _, _, err := uh.service.CreateUser(c, request); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -110,12 +110,12 @@ func (uh *Handler) Registration(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	accessToken, err := uh.service.Registration(c, request)
+	accessToken, refreshToken, err := uh.service.Registration(c, request)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, fmt.Sprintf("{access_token : %s}", accessToken))
+	c.JSON(http.StatusOK, fmt.Sprintf("{access_token : %s}\n{refresh_token: %s}", accessToken, refreshToken))
 }
 
 func (uh *Handler) Authentication(c *gin.Context) {

@@ -16,13 +16,13 @@ import (
 )
 
 // CRUD for user
-func (us *Servise) CreateUser(ctx context.Context, newUser *models.User) (int, error) {
+func (us *Servise) CreateUser(ctx context.Context, newUser *models.User) (int, *sql.Tx, error) {
 	if newUser.Password == "" {
-		return 0, errors.New("invalid format of credential")
+		return 0, nil, errors.New("invalid format of credential")
 	}
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 	newUser.Password = string(hashedPassword)
 	u := models.User{
@@ -49,44 +49,15 @@ func (us *Servise) DeleteUser(ctx context.Context, id int) (int64, error) {
 func (us *Servise) GetUserID(ctx context.Context, username string) (int, error) {
 	user, err := us.repo.GetUserInfoByUsername(ctx, username)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return 0, errors.New("invalid username or password")
-		}
+		return 0, err
 	}
 	return user.ID, err
 
 }
 
-func (us *Servise) Registration(ctx context.Context, newUser *models.User) (string, error) {
-	tx, err := us.repo.Transaction(ctx)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback()
-		}
-	}()
-
-	userID, err := us.CreateUser(ctx, newUser)
-	if err != nil {
-		return "", err
-	}
-
-	privBytes, _ := os.ReadFile(os.Getenv("JWT_PRIVATE_PATH"))
-	privKey, err := jwt.ParseRSAPrivateKeyFromPEM(privBytes)
-	if err != nil {
-		return "", err
-	}
-	accessTokenDur := 15 * time.Minute
-	auth := auth.NewAuthJWT(privKey, "project3", accessTokenDur)
-
-	accessToken, err := auth.IssueAccessToken(int64(userID), []string{newUser.Role})
-	if err != nil {
-		return "", err
-	}
-	return accessToken, err
-
+func (us *Servise) Registration(ctx context.Context, newUser *models.User) (string, string, error) {
+	authJWTFacade := NewAuthJWTFacade(us)
+	return authJWTFacade.Registration(ctx, newUser)
 }
 
 func (us *Servise) Authentication(ctx context.Context, username, password string) (string, error) {
