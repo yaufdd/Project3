@@ -10,12 +10,16 @@ import (
 )
 
 // InsertUserTable save data of new user into Users table
-func (ur *Repo) InsertUserTable(ctx context.Context, newUser *models.User) (int, error) {
-	err := newUser.Insert(ctx, ur.db, boil.Infer())
+func (ur *Repo) InsertUserTable(ctx context.Context, newUser *models.User) (int, *sql.Tx, error) {
+	tx, err := ur.db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
-	return newUser.ID, err
+	err = newUser.Insert(ctx, tx, boil.Infer())
+	if err != nil {
+		return 0, nil, err
+	}
+	return newUser.ID, tx, err
 
 }
 
@@ -49,8 +53,4 @@ func (ur *Repo) DeleteUser(ctx context.Context, id int) (int64, error) {
 		return 0, err
 	}
 	return user.Delete(ctx, ur.db)
-}
-
-func (ur *Repo) Transaction(ctx context.Context) (*sql.Tx, error) {
-	return ur.db.BeginTx(ctx, nil)
 }
