@@ -9,10 +9,12 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/yaufdd/project3/internal/cache"
 	"github.com/yaufdd/project3/internal/handler"
 	"github.com/yaufdd/project3/internal/middleware"
 	"github.com/yaufdd/project3/internal/repository"
@@ -51,8 +53,14 @@ func main() {
 
 	boil.SetDB(db)
 
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("localhost:%s", os.Getenv("REDIS_PORT")),
+		Password: fmt.Sprintf("localhost:%s", os.Getenv("REDIS_PASSWORD")),
+	})
+
 	repo := repository.NewRepository(db)
-	service := service.NewServise(repo)
+	redis := cache.NewCache(rdb)
+	service := service.NewServise(repo, redis)
 	handler := handler.NewHandler(service)
 
 	pubBytes, _ := os.ReadFile(os.Getenv("JWT_PUBLIC_PATH"))
@@ -94,6 +102,9 @@ func main() {
 		api.PUT("project-post", handler.UpdateProjectPostDescription)
 		api.DELETE("project-post", handler.DeleteProjectPost)
 
+		api.GET("user", handler.ReadUser)
+		api.PUT("user", handler.UpdateUsername)
+
 		//Post intercations
 		api.POST("comment", handler.AddComment)
 		api.PUT("like-project-post", handler.LikeProjectPost)
@@ -105,8 +116,6 @@ func main() {
 		//TODO: add mw endpoints
 		//User CRUD
 		admin.POST("user", handler.CreateUser)
-		admin.GET("user", handler.ReadUser)
-		admin.PUT("user", handler.UpdateUsername)
 		admin.DELETE("user", handler.DeleteUser)
 	}
 

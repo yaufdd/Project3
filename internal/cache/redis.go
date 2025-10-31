@@ -8,23 +8,29 @@ import (
 )
 
 type Redis struct {
-	rdb *redis.Client
+	rClient *redis.Client
 }
 
 func NewCache(rdb *redis.Client) *Redis {
-	return &Redis{rdb: rdb}
+	return &Redis{rClient: rdb}
 }
 
-func (r *Redis) IsTokenBanned(ctx context.Context, token string) bool {
-	key := "blacklist:" + token
-	exist, err := r.rdb.Exists(ctx, key).Result()
+// 1 - whitelist
+// 2 - blacklist
+func (r *Redis) SaveToken(ctx context.Context, tokenHash string, ttl time.Duration) error {
+	return r.rClient.Set(ctx, tokenHash, 1, ttl).Err()
+}
+
+func (r *Redis) BanToken(ctx context.Context, tokenHash string, ttl time.Duration) error {
+	return r.rClient.Set(ctx, tokenHash, 2, ttl).Err()
+}
+
+func (r *Redis) IsTokenBanned(ctx context.Context, tokenHash string) bool {
+	list, err := r.rClient.Get(ctx, tokenHash).Result()
 	if err != nil {
 		return false
+	} else if list == "1" {
+		return true
 	}
-	return exist == 1
-}
-
-func (r *Redis) BanToken(ctx context.Context, token string, ttl time.Duration) error {
-	key := "blacklist:" + token
-	return r.rdb.Set(ctx, key, 1, ttl).Err()
+	return false
 }
