@@ -14,7 +14,7 @@ func (ch *Handler) AddCompanyToFounder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := ch.service.AddCompanyToFounder(c, newCompany); err != nil {
+	if err := ch.service.AddCompanyToFounder(c, request); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 	c.JSON(http.StatusOK, "Company is added to user")
@@ -48,7 +48,7 @@ func (ch *Handler) UpdateCompanyName(c *gin.Context) {
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
-	if err := ch.service.UpdateCompanyname(c, newCompanyInfo); err != nil {
+	if err := ch.service.UpdateCompanyName(c, request.CompanyName, request.CompanyID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -65,7 +65,7 @@ func (ch *Handler) DeleteCompany(c *gin.Context) {
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
-	res, err := ch.service.DeleteCompany(c, id.ID)
+	res, err := ch.service.DeleteCompany(c, request.CompanyID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
