@@ -115,7 +115,14 @@ func (uh *Handler) Registration(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, fmt.Sprintf("{access_token : %s}\n{refresh_token: %s}", accessToken, refreshToken))
+	type tokensResponce struct {
+		AccessToken  string
+		RefreshToken string
+	}
+	c.JSON(http.StatusOK, tokensResponce{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	})
 }
 
 func (uh *Handler) Authentication(c *gin.Context) {
