@@ -43,6 +43,7 @@ func (ch *Handler) UpdateCompanyName(c *gin.Context) {
 	type UpdateCompanyName struct {
 		CompanyName string `json:"name" binding:"required"`
 		CompanyID   int    `json:"company_id" binding:"required"`
+		UserID      int    `json:"user_id" binding:"required"`
 	}
 	request := UpdateCompanyName{}
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -60,6 +61,7 @@ func (ch *Handler) UpdateCompanyName(c *gin.Context) {
 func (ch *Handler) DeleteCompany(c *gin.Context) {
 	type deleteCompany struct {
 		CompanyID int `json:"company_id" binding:"required"`
+		UserID    int `json:"user_id" binding:"required"`
 	}
 	request := deleteCompany{}
 	if err := c.ShouldBindJSON(&request); err != nil {

@@ -44,6 +44,7 @@ func (psth *Handler) UpdateProjectPostDescription(c *gin.Context) {
 	type updateProjectPostDescription struct {
 		PostID      int    `json:"post_id" binding:"required"`
 		Description string `json:"desc" binding:"required"`
+		UserID      int    `json:"user_id" binding:"required"`
 	}
 	request := updateProjectPostDescription{}
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -62,6 +63,7 @@ func (psth *Handler) UpdateProjectPostDescription(c *gin.Context) {
 func (psth *Handler) DeleteProjectPost(c *gin.Context) {
 	type deleteProjectPost struct {
 		PostID int
+		UserID int `json:"user_id" binding:"required"`
 	}
 	request := deleteProjectPost{}
 	if err := c.ShouldBindJSON(request); err != nil {

@@ -44,6 +44,7 @@ func (ph *Handler) UpdateProjectTitle(c *gin.Context) {
 	type updateProjectTitle struct {
 		ProjectID int    `json:"project_id" binding:"required"`
 		Title     string `json:"title" binding:"required"`
+		UserID    int    `json:"user_id" binding:"required"`
 	}
 	request := updateProjectTitle{}
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -61,6 +62,7 @@ func (ph *Handler) UpdateProjectTitle(c *gin.Context) {
 func (ph *Handler) DeleteProject(c *gin.Context) {
 	type deleteProject struct {
 		ProjectID int `json:"project_id" binding:"required"`
+		UserID    int `json:"user_id" binding:"required"`
 	}
 	request := deleteProject{}
 	if err := c.ShouldBindJSON(&request); err != nil {
