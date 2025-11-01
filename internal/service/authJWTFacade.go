@@ -41,11 +41,13 @@ func (f *AuthJWTFacade) Registration(ctx context.Context, newUser *models.User) 
 		return "", "", err
 	}
 	hashedToken := f.hasher.HashToken(refreshToken)
-	if err = f.database.saveRefreshToken(ctx, f.service, userID, hashedToken, jti, refreshExpire); err != nil {
+	if err := f.database.saveRefreshToken(ctx, f.service, userID, hashedToken, jti, refreshExpire); err != nil {
 		return "", "", err
 	}
-	return accessToken, refreshToken, err
+	if err := f.database.saveRefreshTokenToRedis(ctx, f.service, refreshToken, time.Until(refreshExpire)); err != nil {
 
+	}
+	return accessToken, refreshToken, err
 }
 
 func (f *AuthJWTFacade) Authentication(ctx context.Context, reqUsername, reqPassword string) (string, string, error) {
@@ -57,9 +59,7 @@ func (f *AuthJWTFacade) Authentication(ctx context.Context, reqUsername, reqPass
 	if err != nil {
 		return "", "", err
 	}
-	// hashedToken := f.hasher.HashToken(refreshToken)
-	ttl := time.Until(refreshExpire)
-	if err = f.database.saveRefreshTokenToRedis(ctx, f.service, refreshToken, ttl); err != nil {
+	if err = f.database.saveRefreshTokenToRedis(ctx, f.service, refreshToken, time.Until(refreshExpire)); err != nil {
 		return "", "", err
 	}
 	return accessToken, refreshToken, err
