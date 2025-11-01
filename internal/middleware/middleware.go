@@ -1,9 +1,13 @@
 package middleware
 
 import (
+	"bytes"
 	"crypto/rsa"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -41,6 +45,70 @@ func (m *JWTMW) Handler() gin.HandlerFunc {
 		}
 		c.Set("uid", claims.UserID)
 		c.Set("roles", claims.Roles)
+		c.Next()
+	}
+}
+
+func (m *JWTMW) RequiredAccountOnwer() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authUserID, exist := c.Get("uid")
+		if !exist {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthrized"})
+			fmt.Println("1")
+			return
+		}
+		fmt.Println(reflect.TypeOf(authUserID))
+		uidFromToken, ok := authUserID.(int64)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthrized"})
+			fmt.Println("2")
+			return
+		}
+		bodyBytes, err := io.ReadAll(c.Request.Body)
+		fmt.Println(bodyBytes)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthrized"})
+			fmt.Println("3")
+			return
+		}
+
+		var payload map[string]any
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, &payload); err != nil {
+				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid json"})
+				fmt.Println("4")
+				return
+			}
+		} else {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "empty body"})
+			fmt.Println("5")
+			return
+		}
+		rawBodyUID, ok := payload["user_id"]
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "user_id missing in body"})
+			fmt.Println("6")
+			return
+		}
+
+		var uidFromBody int64
+		switch v := rawBodyUID.(type) {
+		case float64:
+			uidFromBody = int64(v)
+		case int64:
+			uidFromBody = v
+		default:
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "user_id has wrong type"})
+			fmt.Println("7")
+			return
+		}
+		if uidFromBody != uidFromToken {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			fmt.Println("8")
+			return
+		}
+
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		c.Next()
 	}
 }

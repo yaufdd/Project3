@@ -85,22 +85,14 @@ func main() {
 	api.Use(jwtmw.Handler())
 	{
 		//Company CRUD
-		api.POST("company", handler.AddCompanyToFounder)
+		//api.POST("company", handler.AddCompanyToFounder)
 		api.GET("company", handler.ReadCompany)
-		api.PUT("company", handler.UpdateCompanyName)
-		api.DELETE("company", handler.DeleteCompany)
 
 		//Project CRUD
-		api.POST("project", handler.AddProject)
 		api.GET("project", handler.ReadProject)
-		api.PUT("project", handler.UpdateProjectTitle)
-		api.DELETE("project", handler.DeleteProject)
 
 		//Project post CRUD
-		api.POST("project-post", handler.PublishProjectPost)
 		api.GET("project-post", handler.ReadProjectPost)
-		api.PUT("project-post", handler.UpdateProjectPostDescription)
-		api.DELETE("project-post", handler.DeleteProjectPost)
 
 		api.GET("user", handler.ReadUser)
 		api.PUT("user", handler.UpdateUsername)
@@ -108,6 +100,22 @@ func main() {
 		//Post intercations
 		api.POST("comment", handler.AddComment)
 		api.PUT("like-project-post", handler.LikeProjectPost)
+	}
+
+	me := api.Group("/me")
+	me.Use(jwtmw.RequiredAccountOnwer())
+	{
+		me.POST("company", handler.AddCompanyToFounder)
+		me.PUT("company", handler.UpdateCompanyName)
+		me.DELETE("company", handler.DeleteCompany)
+
+		me.POST("project", handler.AddProject)
+		me.PUT("project", handler.UpdateProjectTitle)
+		me.DELETE("project", handler.DeleteProject)
+
+		me.POST("project-post", handler.PublishProjectPost)
+		me.PUT("project-post", handler.UpdateProjectPostDescription)
+		me.DELETE("project-post", handler.DeleteProjectPost)
 	}
 
 	admin := api.Group("/admin")
