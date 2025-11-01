@@ -148,7 +148,7 @@ func (t *TokenGenerator) generateTokens(userID int, userRole string) (
 
 func (t *TokenGenerator) getAccessT(privateKey *rsa.PrivateKey, userID int64, role string) (string, error) {
 	accessTokenDur := 15 * time.Minute
-	auth := auth.NewAuthJWT(privateKey, "project3_access", accessTokenDur)
+	auth := auth.NewAuthJWT(privateKey, "project3", accessTokenDur)
 
 	accessToken, err := auth.IssueAccessToken(int64(userID), []string{role})
 	if err != nil {
@@ -159,7 +159,7 @@ func (t *TokenGenerator) getAccessT(privateKey *rsa.PrivateKey, userID int64, ro
 
 func (t *TokenGenerator) getRefreshT(privateKey *rsa.PrivateKey, userID int) (hashedToken string, jti string, refreshExpire time.Time, err error) {
 	refreshTokenDur := 7 * (24 * time.Hour)
-	auth := auth.NewAuthJWT(privateKey, "project3_refreshT", refreshTokenDur)
+	auth := auth.NewAuthJWT(privateKey, "project3", refreshTokenDur)
 
 	refreshToken, jti, refreshExpire, err := auth.IssueRefreshToken(int64(userID))
 	if err != nil {
