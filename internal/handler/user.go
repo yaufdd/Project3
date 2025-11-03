@@ -46,7 +46,6 @@ func (uh *Handler) ReadUser(c *gin.Context) {
 // UpdateUser - handler for update user. Need to user id
 func (uh *Handler) UpdateUsername(c *gin.Context) {
 	type updateUsername struct {
-		UserID      int    `json:"user_id" binding:"required"`
 		NewUsername string `json:"new_uname" binding:"required"`
 	}
 	request := updateUsername{}
@@ -54,7 +53,8 @@ func (uh *Handler) UpdateUsername(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := uh.service.UpdateUsername(c, request.UserID, request.NewUsername); err != nil {
+	tokenUserID := c.GetInt64("uid")
+	if err := uh.service.UpdateUsername(c, int(tokenUserID), request.NewUsername); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

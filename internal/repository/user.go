@@ -33,15 +33,8 @@ func (ur *Repo) GetUserInfoByUsername(ctx context.Context, username string) (*mo
 }
 
 // UpdateUsername chages user.
-func (ur *Repo) UpdateUsername(ctx context.Context, userID int, newUsername string) error {
-	user, err := models.FindUser(ctx, ur.db, userID)
-	if err != nil {
-		return err
-	}
-
-	user.Username = newUsername
-	_, err = user.Update(ctx, ur.db, boil.Whitelist("username"))
-
+func (ur *Repo) UpdateUsername(ctx context.Context, user *models.User) error {
+	_, err := user.Update(ctx, ur.db, boil.Whitelist("username"))
 	return err
 }
 

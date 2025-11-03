@@ -34,8 +34,13 @@ func (us *Servise) ReadUser(ctx context.Context, id int) (*models.User, error) {
 	return us.repo.GetUserInfo(ctx, id)
 }
 
-func (us *Servise) UpdateUsername(ctx context.Context, userID int, newUsername string) error {
-	return us.repo.UpdateUsername(ctx, userID, newUsername)
+func (us *Servise) UpdateUsername(ctx context.Context, userIDFromToken int, newUsername string) error {
+	user, err := us.repo.GetUserInfo(ctx, userIDFromToken)
+	if err != nil {
+		return err
+	}
+	user.Username = newUsername
+	return us.repo.UpdateUsername(ctx, user)
 }
 
 func (us *Servise) DeleteUser(ctx context.Context, id int) (int64, error) {
