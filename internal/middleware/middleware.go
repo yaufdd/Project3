@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -31,7 +32,6 @@ func (m *JWTMW) Handler() gin.HandlerFunc {
 		}
 
 		raw := strings.TrimPrefix(h, "Bearer ")
-
 		var claims auth.AcessClaims
 		tok, err := jwt.ParseWithClaims(raw, &claims, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
@@ -40,6 +40,15 @@ func (m *JWTMW) Handler() gin.HandlerFunc {
 			return m.publicKey, nil
 		}, jwt.WithIssuer(m.issuer))
 		if err != nil || !tok.Valid {
+			exp, err := tok.Claims.GetExpirationTime()
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
+				return
+			}
+			if exp.Time.Before(time.Now()) {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "expired token"})
+				return
+			}
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			return
 		}
@@ -54,21 +63,18 @@ func (m *JWTMW) RequiredAccountOnwer() gin.HandlerFunc {
 		authUserID, exist := c.Get("uid")
 		if !exist {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthrized"})
-			fmt.Println("1")
 			return
 		}
 		fmt.Println(reflect.TypeOf(authUserID))
 		uidFromToken, ok := authUserID.(int64)
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthrized"})
-			fmt.Println("2")
 			return
 		}
 		bodyBytes, err := io.ReadAll(c.Request.Body)
 		fmt.Println(bodyBytes)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthrized"})
-			fmt.Println("3")
 			return
 		}
 
@@ -76,18 +82,15 @@ func (m *JWTMW) RequiredAccountOnwer() gin.HandlerFunc {
 		if len(bodyBytes) > 0 {
 			if err := json.Unmarshal(bodyBytes, &payload); err != nil {
 				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid json"})
-				fmt.Println("4")
 				return
 			}
 		} else {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "empty body"})
-			fmt.Println("5")
 			return
 		}
 		rawBodyUID, ok := payload["user_id"]
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "user_id missing in body"})
-			fmt.Println("6")
 			return
 		}
 
@@ -99,12 +102,10 @@ func (m *JWTMW) RequiredAccountOnwer() gin.HandlerFunc {
 			uidFromBody = v
 		default:
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "user_id has wrong type"})
-			fmt.Println("7")
 			return
 		}
 		if uidFromBody != uidFromToken {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden"})
-			fmt.Println("8")
 			return
 		}
 
