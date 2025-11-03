@@ -15,14 +15,12 @@ func NewCache(rdb *redis.Client) *Redis {
 	return &Redis{rClient: rdb}
 }
 
-// "+" - whitelist
-// "-" - blacklist
 func (r *Redis) SaveToken(ctx context.Context, tokenHash string, ttl time.Duration) error {
-	return r.rClient.Set(ctx, tokenHash, "+", ttl).Err()
+	return r.rClient.Set(ctx, tokenHash, "whitelist", ttl).Err()
 }
 
 func (r *Redis) BanToken(ctx context.Context, tokenHash string, ttl time.Duration) error {
-	return r.rClient.Set(ctx, tokenHash, "-", ttl).Err()
+	return r.rClient.Set(ctx, tokenHash, "blacklist", ttl).Err()
 }
 
 func (r *Redis) IsTokenBanned(ctx context.Context, tokenHash string) bool {

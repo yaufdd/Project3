@@ -36,7 +36,7 @@ func (f *AuthJWTFacade) Registration(ctx context.Context, newUser *models.User) 
 		f.database.rollBack(tx, err)
 	}()
 
-	accessToken, refreshToken, jti, refreshExpire, err := f.tokenGenerator.generateTokens(userID, newUser.Role)
+	accessToken, refreshToken, jti, accessExpire, refreshExpire, err := f.tokenGenerator.generateTokens(userID, newUser.Role)
 	if err != nil {
 		return "", "", err
 	}
@@ -44,7 +44,10 @@ func (f *AuthJWTFacade) Registration(ctx context.Context, newUser *models.User) 
 	if err := f.database.saveRefreshToken(ctx, f.service, userID, hashedToken, jti, refreshExpire); err != nil {
 		return "", "", err
 	}
-	if err := f.database.saveRefreshTokenToRedis(ctx, f.service, refreshToken, time.Until(refreshExpire)); err != nil {
+	if err := f.database.saveTokenToRedis(ctx, f.service, refreshToken, time.Until(refreshExpire)); err != nil {
+		return "", "", err
+	}
+	if err = f.database.saveTokenToRedis(ctx, f.service, accessToken, time.Until(accessExpire)); err != nil {
 		return "", "", err
 	}
 	return accessToken, refreshToken, err
@@ -55,11 +58,14 @@ func (f *AuthJWTFacade) Authentication(ctx context.Context, reqUsername, reqPass
 	if err != nil {
 		return "", "", err
 	}
-	accessToken, refreshToken, _, refreshExpire, err := f.tokenGenerator.generateTokens(user.ID, user.Role)
+	accessToken, refreshToken, _, accessExpire, refreshExpire, err := f.tokenGenerator.generateTokens(user.ID, user.Role)
 	if err != nil {
 		return "", "", err
 	}
-	if err = f.database.saveRefreshTokenToRedis(ctx, f.service, refreshToken, time.Until(refreshExpire)); err != nil {
+	if err = f.database.saveTokenToRedis(ctx, f.service, refreshToken, time.Until(refreshExpire)); err != nil {
+		return "", "", err
+	}
+	if err = f.database.saveTokenToRedis(ctx, f.service, accessToken, time.Until(accessExpire)); err != nil {
 		return "", "", err
 	}
 	return accessToken, refreshToken, err
@@ -68,7 +74,7 @@ func (f *AuthJWTFacade) Authentication(ctx context.Context, reqUsername, reqPass
 
 type Database struct{}
 
-func (d *Database) saveRefreshTokenToRedis(ctx context.Context, s *Servise, tokenHash string, refreshExpire time.Duration) error {
+func (d *Database) saveTokenToRedis(ctx context.Context, s *Servise, tokenHash string, refreshExpire time.Duration) error {
 	return s.rcache.SaveToken(ctx, tokenHash, refreshExpire)
 }
 
@@ -125,6 +131,7 @@ type TokenGenerator struct{}
 func (t *TokenGenerator) generateTokens(userID int, userRole string) (
 	accessToken, refreshToken string,
 	jti string,
+	accessExpire time.Time,
 	refreshExpire time.Time,
 	err error,
 
@@ -132,29 +139,29 @@ func (t *TokenGenerator) generateTokens(userID int, userRole string) (
 	privBytes, _ := os.ReadFile(os.Getenv("JWT_PRIVATE_PATH"))
 	privKey, err := jwt.ParseRSAPrivateKeyFromPEM(privBytes)
 	if err != nil {
-		return "", "", "", time.Time{}, err
+		return "", "", "", time.Time{}, time.Time{}, err
 	}
-	accessToken, err = t.getAccessT(privKey, int64(userID), userRole)
+	accessToken, refreshExpire, err = t.getAccessT(privKey, int64(userID), userRole)
 	if err != nil {
-		return "", "", "", time.Time{}, err
+		return "", "", "", time.Time{}, time.Time{}, err
 	}
 	refreshToken, jti, refreshExpire, err = t.getRefreshT(privKey, userID)
 	if err != nil {
-		return "", "", "", time.Time{}, err
+		return "", "", "", time.Time{}, time.Time{}, err
 	}
 
-	return accessToken, refreshToken, jti, refreshExpire, err
+	return accessToken, refreshToken, jti, accessExpire, refreshExpire, err
 }
 
-func (t *TokenGenerator) getAccessT(privateKey *rsa.PrivateKey, userID int64, role string) (string, error) {
+func (t *TokenGenerator) getAccessT(privateKey *rsa.PrivateKey, userID int64, role string) (string, time.Time, error) {
 	accessTokenDur := 15 * time.Minute
 	auth := auth.NewAuthJWT(privateKey, "project3", accessTokenDur)
 
-	accessToken, err := auth.IssueAccessToken(int64(userID), []string{role})
+	accessToken, expire, err := auth.IssueAccessToken(int64(userID), []string{role})
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
-	return accessToken, err
+	return accessToken, expire, err
 }
 
 func (t *TokenGenerator) getRefreshT(privateKey *rsa.PrivateKey, userID int) (hashedToken string, jti string, refreshExpire time.Time, err error) {

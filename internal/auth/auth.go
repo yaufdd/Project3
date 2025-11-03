@@ -33,8 +33,9 @@ type RefreshClaims struct {
 	jwt.RegisteredClaims
 }
 
-func (a *AuthJWT) IssueAccessToken(userID int64, roles []string) (string, error) {
+func (a *AuthJWT) IssueAccessToken(userID int64, roles []string) (string, time.Time, error) {
 	now := time.Now()
+	exp := now.Add(a.accessTTL)
 	claims := AcessClaims{
 		UserID: userID,
 		Roles:  roles,
@@ -42,11 +43,12 @@ func (a *AuthJWT) IssueAccessToken(userID int64, roles []string) (string, error)
 			Issuer:    a.issuer,
 			Subject:   fmt.Sprint(userID),
 			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(a.accessTTL)),
+			ExpiresAt: jwt.NewNumericDate(exp),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	return token.SignedString(a.privateKey)
+	signed, err := token.SignedString(a.privateKey)
+	return signed, exp, err
 }
 
 func (a *AuthJWT) IssueRefreshToken(uid int64) (token string, jti string, exp time.Time, err error) {
