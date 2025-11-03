@@ -4,17 +4,20 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/yaufdd/project3/internal/models"
 )
 
 // AddCompanyToFounder - handler to add table
 func (ch *Handler) AddCompanyToFounder(c *gin.Context) {
-	var request *models.Company
+	type addCompanyToFounder struct {
+		Name string `json:"name" binfing:"required"`
+	}
+	request := addCompanyToFounder{}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := ch.service.AddCompanyToFounder(c, request); err != nil {
+	tokenUserID := c.GetInt64("uid")
+	if err := ch.service.AddCompanyToFounder(c, request.Name, int(tokenUserID)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 	c.JSON(http.StatusOK, "Company is added to user")
@@ -43,13 +46,14 @@ func (ch *Handler) UpdateCompanyName(c *gin.Context) {
 	type UpdateCompanyName struct {
 		CompanyName string `json:"name" binding:"required"`
 		CompanyID   int    `json:"company_id" binding:"required"`
-		UserID      int    `json:"user_id" binding:"required"`
 	}
+
 	request := UpdateCompanyName{}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
-	if err := ch.service.UpdateCompanyName(c, request.CompanyName, request.CompanyID); err != nil {
+	tokenUserID := c.GetInt64("uid")
+	if err := ch.service.UpdateCompanyName(c, request.CompanyName, request.CompanyID, int(tokenUserID)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -61,18 +65,21 @@ func (ch *Handler) UpdateCompanyName(c *gin.Context) {
 func (ch *Handler) DeleteCompany(c *gin.Context) {
 	type deleteCompany struct {
 		CompanyID int `json:"company_id" binding:"required"`
-		UserID    int `json:"user_id" binding:"required"`
 	}
 	request := deleteCompany{}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	res, err := ch.service.DeleteCompany(c, request.CompanyID)
+	tokenUserID := c.GetInt64("uid")
+	res, err := ch.service.DeleteCompany(c, request.CompanyID, int(tokenUserID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 	if res == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no user found for delete"})
+		return
 	}
 	c.JSON(http.StatusOK, "company was deleted")
 

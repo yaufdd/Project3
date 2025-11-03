@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"github.com/yaufdd/project3/internal/models"
 )
 
@@ -27,22 +29,25 @@ func (cr *Repo) GetCompanyOwnerIDbyCname(ctx context.Context, companyName string
 	return company.UserID, err
 }
 
-func (cr *Repo) UpdateCompanyName(ctx context.Context, newCompanyName string, companyID int) error {
-	company, err := models.FindCompany(ctx, cr.db, companyID)
+func (cr *Repo) UpdateCompanyName(ctx context.Context, company *models.Company) error {
+	n, err := models.Companies(qm.Where("id=? AND user_id=?", company.ID, company.UserID)).UpdateAll(ctx, cr.db, models.M{"name": company.Name})
 	if err != nil {
 		return err
 	}
-	company.Name = newCompanyName
-
-	_, err = company.Update(ctx, cr.db, boil.Whitelist("name"))
+	if n == 0 {
+		return errors.New("user not found")
+	}
 
 	return err
 }
 
-func (cr *Repo) DeleteCompany(ctx context.Context, id int) (int64, error) {
-	company, err := models.FindCompany(ctx, cr.db, id)
+func (cr *Repo) DeleteCompany(ctx context.Context, company *models.Company) (int64, error) {
+	n, err := models.Companies(qm.Where("id=? AND user_id=?", company.ID, company.UserID)).DeleteAll(ctx, cr.db)
 	if err != nil {
-		return 0, nil
+		return 0, err
+	}
+	if n == 0 {
+		return 0, errors.New("user not found")
 	}
 	return company.Delete(ctx, cr.db)
 }
