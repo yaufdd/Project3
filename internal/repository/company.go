@@ -30,14 +30,13 @@ func (cr *Repo) GetCompanyOwnerIDbyCname(ctx context.Context, companyName string
 }
 
 func (cr *Repo) UpdateCompanyName(ctx context.Context, company *models.Company) error {
-	n, err := models.Companies(qm.Where("id=? AND user_id=?", company.ID, company.UserID)).UpdateAll(ctx, cr.db, models.M{"name": company.Name})
+	affRow, err := company.Update(ctx, cr.db, boil.Whitelist("name"))
 	if err != nil {
 		return err
 	}
-	if n == 0 {
-		return errors.New("user not found")
+	if affRow == 0 {
+		return errors.New("no row was updated")
 	}
-
 	return err
 }
 
