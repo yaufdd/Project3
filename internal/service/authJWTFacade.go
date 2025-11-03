@@ -45,7 +45,7 @@ func (f *AuthJWTFacade) Registration(ctx context.Context, newUser *models.User) 
 		return "", "", err
 	}
 	if err := f.database.saveRefreshTokenToRedis(ctx, f.service, refreshToken, time.Until(refreshExpire)); err != nil {
-
+		return "", "", err
 	}
 	return accessToken, refreshToken, err
 }
