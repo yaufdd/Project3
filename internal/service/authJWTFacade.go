@@ -141,11 +141,11 @@ func (t *TokenGenerator) generateTokens(userID int, userRole string) (
 	if err != nil {
 		return "", "", "", time.Time{}, time.Time{}, err
 	}
-	accessToken, refreshExpire, err = t.getAccessT(privKey, int64(userID), userRole)
+	accessToken, accessExpire, err = t.getAccessT(privKey, int64(userID), userRole)
 	if err != nil {
 		return "", "", "", time.Time{}, time.Time{}, err
 	}
-	refreshToken, jti, refreshExpire, err = t.getRefreshT(privKey, userID)
+	refreshToken, jti, refreshExpire, err = t.getRefreshT(privKey, int64(userID))
 	if err != nil {
 		return "", "", "", time.Time{}, time.Time{}, err
 	}
@@ -157,18 +157,18 @@ func (t *TokenGenerator) getAccessT(privateKey *rsa.PrivateKey, userID int64, ro
 	accessTokenDur := 15 * time.Minute
 	auth := auth.NewAuthJWT(privateKey, "project3", accessTokenDur)
 
-	accessToken, expire, err := auth.IssueAccessToken(int64(userID), []string{role})
+	accessToken, accessExpire, err := auth.IssueAccessToken(userID, []string{role})
 	if err != nil {
 		return "", time.Time{}, err
 	}
-	return accessToken, expire, err
+	return accessToken, accessExpire, err
 }
 
-func (t *TokenGenerator) getRefreshT(privateKey *rsa.PrivateKey, userID int) (hashedToken string, jti string, refreshExpire time.Time, err error) {
+func (t *TokenGenerator) getRefreshT(privateKey *rsa.PrivateKey, userID int64) (hashedToken string, jti string, refreshExpire time.Time, err error) {
 	refreshTokenDur := 7 * (24 * time.Hour)
 	auth := auth.NewAuthJWT(privateKey, "project3", refreshTokenDur)
 
-	refreshToken, jti, refreshExpire, err := auth.IssueRefreshToken(int64(userID))
+	refreshToken, jti, refreshExpire, err := auth.IssueRefreshToken(userID)
 	if err != nil {
 		return "", "", time.Time{}, err
 	}
