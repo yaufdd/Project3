@@ -14,7 +14,8 @@ func (ph *Handler) AddProject(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := ph.service.AddProject(c, request); err != nil {
+	tokenUserID := c.GetInt64("uid")
+	if err := ph.service.AddProject(c, request, int(tokenUserID)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -44,15 +45,20 @@ func (ph *Handler) UpdateProjectTitle(c *gin.Context) {
 	type updateProjectTitle struct {
 		ProjectID int    `json:"project_id" binding:"required"`
 		Title     string `json:"title" binding:"required"`
-		UserID    int    `json:"user_id" binding:"required"`
 	}
 	request := updateProjectTitle{}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := ph.service.UpdateProjectTitle(c, request.ProjectID, request.Title); err != nil {
+	tokenUserID := c.GetInt64("uid")
+	AffectedRow, err := ph.service.UpdateProjectTitle(c, request.ProjectID, request.Title, int(tokenUserID))
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if AffectedRow == 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no changes"})
 		return
 	}
 	c.JSON(http.StatusOK, "project info was updated")
@@ -62,14 +68,14 @@ func (ph *Handler) UpdateProjectTitle(c *gin.Context) {
 func (ph *Handler) DeleteProject(c *gin.Context) {
 	type deleteProject struct {
 		ProjectID int `json:"project_id" binding:"required"`
-		UserID    int `json:"user_id" binding:"required"`
 	}
 	request := deleteProject{}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	res, err := ph.service.DeleteProject(c, request.ProjectID)
+	tokenUserID := c.GetInt64("uid")
+	res, err := ph.service.DeleteProject(c, request.ProjectID, int(tokenUserID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return

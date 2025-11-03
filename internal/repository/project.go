@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"github.com/yaufdd/project3/internal/models"
 )
 
@@ -21,19 +22,18 @@ func (pr *Repo) GetProjectInfoByTitle(ctx context.Context, title string) (*model
 	return models.Projects(models.ProjectWhere.Title.EQ(title)).One(ctx, pr.db)
 }
 
-// UpdateProject for update project title. Need to send full json of project object,
-// including id. Without ID info wont be updated
-func (pr *Repo) UpdateProjectTitle(ctx context.Context, projecID int, newTitle string) error {
-	project, err := models.FindProject(ctx, pr.db, projecID)
+func (pr *Repo) GetProjectrOwnerIDByPId(ctx context.Context, projectID int) (int, error) {
+	project, err := models.Projects(models.ProjectPostWhere.ID.EQ(projectID), qm.Load(qm.Rels(models.ProjectRels.Company, models.CompanyRels.User))).One(ctx, pr.db)
 	if err != nil {
-		return err
+		return 0, err
 	}
+	user := project.R.Company.R.User
+	return user.ID, err
+}
 
-	project.Title = newTitle
+func (pr *Repo) UpdateProjectTitle(ctx context.Context, project *models.Project) (int64, error) {
+	return project.Update(ctx, pr.db, boil.Whitelist("title"))
 
-	_, err = project.Update(ctx, pr.db, boil.Whitelist("title", "description", "goal_amount", "collected_amount"))
-
-	return err
 }
 
 func (pr *Repo) DeleteProject(ctx context.Context, id int) (int64, error) {
