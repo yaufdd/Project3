@@ -84,18 +84,13 @@ func main() {
 	api := r.Group("api")
 	api.Use(jwtmw.Handler())
 	{
-		//Company CRUD
-		//api.POST("company", handler.AddCompanyToFounder)
 		api.GET("company", handler.ReadCompany)
 
-		//Project CRUD
 		api.GET("project", handler.ReadProject)
 
-		//Project post CRUD
 		api.GET("project-post", handler.ReadProjectPost)
 
 		api.GET("user", handler.ReadUser)
-		api.PUT("user", handler.UpdateUsername)
 
 		//Post intercations
 		api.POST("comment", handler.AddComment)
@@ -103,8 +98,10 @@ func main() {
 	}
 
 	me := api.Group("/me")
-	me.Use(jwtmw.RequiredAccountOnwer())
+	me.Use()
 	{
+		me.PUT("user", handler.UpdateUsername)
+
 		me.POST("company", handler.AddCompanyToFounder)
 		me.PUT("company", handler.UpdateCompanyName)
 		me.DELETE("company", handler.DeleteCompany)
@@ -121,8 +118,6 @@ func main() {
 	admin := api.Group("/admin")
 	admin.Use(jwtmw.RequiredRoles("admin"))
 	{
-		//TODO: add mw endpoints
-		//User CRUD
 		admin.POST("user", handler.CreateUser)
 		admin.DELETE("user", handler.DeleteUser)
 	}
