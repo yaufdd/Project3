@@ -148,3 +148,28 @@ func (uh *Handler) Authentication(c *gin.Context) {
 		RefreshToken: refreshToken,
 	})
 }
+
+func (uh *Handler) RefreshTokenAuth(c *gin.Context) {
+	type refreshTokenAuth struct {
+		RefreshToken string `json:"refresh_token" binding:"required"`
+	}
+	request := refreshTokenAuth{}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	accessToken, refreshToken, err := uh.service.RefreshTokenAuth(c, request.RefreshToken)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	type tokensReesponce struct {
+		AccessToken  string
+		RefreshToken string
+	}
+	c.JSON(http.StatusOK, tokensReesponce{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	})
+
+}

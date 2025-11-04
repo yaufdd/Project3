@@ -10,16 +10,12 @@ import (
 )
 
 // InsertUserTable save data of new user into Users table
-func (ur *Repo) InsertUserTable(ctx context.Context, newUser *models.User) (int, *sql.Tx, error) {
-	tx, err := ur.db.BeginTx(ctx, nil)
+func (ur *Repo) InsertUserTable(ctx context.Context, tx *sql.Tx, newUser *models.User) (int, error) {
+	err := newUser.Insert(ctx, tx, boil.Infer())
 	if err != nil {
-		return 0, nil, err
+		return 0, err
 	}
-	err = newUser.Insert(ctx, tx, boil.Infer())
-	if err != nil {
-		return 0, nil, err
-	}
-	return newUser.ID, tx, err
+	return newUser.ID, err
 
 }
 

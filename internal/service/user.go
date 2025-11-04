@@ -27,7 +27,12 @@ func (us *Servise) CreateUser(ctx context.Context, newUser *models.User) (int, *
 		Email:    newUser.Email,
 		Role:     newUser.Role,
 	}
-	return us.repo.InsertUserTable(ctx, &u)
+	tx, err := us.repo.BeginTx(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+	newUserID, err := us.repo.InsertUserTable(ctx, tx, &u)
+	return newUserID, tx, err
 }
 
 func (us *Servise) ReadUser(ctx context.Context, id int) (*models.User, error) {
@@ -64,4 +69,9 @@ func (us *Servise) Registration(ctx context.Context, newUser *models.User) (stri
 func (us *Servise) Authentication(ctx context.Context, reqUsername, reqPassword string) (string, string, error) {
 	authJWTFacade := NewAuthJWTFacade(us)
 	return authJWTFacade.Authentication(ctx, reqUsername, reqPassword)
+}
+
+func (us *Servise) RefreshTokenAuth(ctx context.Context, refreshToken string) (string, string, error) {
+	AuthJWTFacade := NewAuthJWTFacade(us)
+	return AuthJWTFacade.AuthByRefreshToken(ctx, refreshToken)
 }

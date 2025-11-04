@@ -12,16 +12,16 @@ import (
 type AuthJWT struct {
 	privateKey *rsa.PrivateKey
 	issuer     string
-	accessTTL  time.Duration
-	refreshTTL time.Duration
+	ttl        time.Duration
 }
 
 func NewAuthJWT(priv *rsa.PrivateKey, issuer string, ttl time.Duration) *AuthJWT {
-	return &AuthJWT{privateKey: priv, issuer: issuer, accessTTL: ttl}
+	return &AuthJWT{privateKey: priv, issuer: issuer, ttl: ttl}
 }
 
 type AcessClaims struct {
 	UserID int64 `json:"uid"`
+	Type   string
 	Roles  []string
 	jwt.RegisteredClaims
 }
@@ -35,9 +35,10 @@ type RefreshClaims struct {
 
 func (a *AuthJWT) IssueAccessToken(userID int64, roles []string) (string, time.Time, error) {
 	now := time.Now()
-	exp := now.Add(a.accessTTL)
+	exp := now.Add(a.ttl)
 	claims := AcessClaims{
 		UserID: userID,
+		Type:   "access",
 		Roles:  roles,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    a.issuer,
@@ -53,7 +54,7 @@ func (a *AuthJWT) IssueAccessToken(userID int64, roles []string) (string, time.T
 
 func (a *AuthJWT) IssueRefreshToken(uid int64) (token string, jti string, exp time.Time, err error) {
 	now := time.Now()
-	exp = now.Add(a.refreshTTL)
+	exp = now.Add(a.ttl)
 	jti = uuid.NewString()
 
 	claims := RefreshClaims{

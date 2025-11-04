@@ -2,6 +2,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 )
 
@@ -13,4 +14,8 @@ type Repo struct {
 // NewRepository function for make Repository object
 func NewRepository(db *sql.DB) *Repo {
 	return &Repo{db: db}
+}
+
+func (r *Repo) BeginTx(ctx context.Context) (*sql.Tx, error) {
+	return r.db.BeginTx(ctx, nil)
 }

@@ -6,6 +6,8 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -30,18 +32,17 @@ func (f *AuthJWTFacade) Registration(ctx context.Context, newUser *models.User) 
 	userID, tx, err := f.database.saveNewUser(ctx, f.service, newUser)
 	if err != nil {
 		return "", "", err
-
 	}
 	defer func() {
 		f.database.rollBack(tx, err)
 	}()
-
 	accessToken, refreshToken, jti, accessExpire, refreshExpire, err := f.tokenGenerator.generateTokens(userID, newUser.Role)
 	if err != nil {
 		return "", "", err
 	}
 	hashedToken := f.hasher.HashToken(refreshToken)
-	if err := f.database.saveRefreshToken(ctx, f.service, userID, hashedToken, jti, refreshExpire); err != nil {
+	err = f.database.saveRefreshToken(ctx, f.service, tx, userID, hashedToken, jti, refreshExpire)
+	if err != nil {
 		return "", "", err
 	}
 	if err := f.database.saveTokenToRedis(ctx, f.service, refreshToken, time.Until(refreshExpire)); err != nil {
@@ -58,10 +59,22 @@ func (f *AuthJWTFacade) Authentication(ctx context.Context, reqUsername, reqPass
 	if err != nil {
 		return "", "", err
 	}
-	accessToken, refreshToken, _, accessExpire, refreshExpire, err := f.tokenGenerator.generateTokens(user.ID, user.Role)
+	accessToken, refreshToken, jti, accessExpire, refreshExpire, err := f.tokenGenerator.generateTokens(user.ID, user.Role)
 	if err != nil {
 		return "", "", err
 	}
+	tx, err := f.service.repo.BeginTx(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	hashedToken := f.hasher.HashToken(refreshToken)
+	err = f.database.saveRefreshToken(ctx, f.service, tx, user.ID, hashedToken, jti, refreshExpire)
+	if err != nil {
+		return "", "", err
+	}
+	defer func() {
+		f.database.rollBack(tx, err)
+	}()
 	if err = f.database.saveTokenToRedis(ctx, f.service, refreshToken, time.Until(refreshExpire)); err != nil {
 		return "", "", err
 	}
@@ -72,10 +85,51 @@ func (f *AuthJWTFacade) Authentication(ctx context.Context, reqUsername, reqPass
 
 }
 
+func (f *AuthJWTFacade) AuthByRefreshToken(ctx context.Context, refreshToken string) (string, string, error) {
+	tokenHash := f.hasher.HashToken(refreshToken)
+	refreshTokenModel, err := f.database.getRefreshTokenModel(ctx, f.service, tokenHash)
+	if err != nil {
+		return "", "", err
+	}
+	if refreshTokenModel.Revoked || refreshTokenModel.ExpiresAt.Before(time.Now()) {
+		return "", "", errors.New("refresh token is old")
+	}
+	if err := f.database.makeRefreshTokenRevoked(ctx, f.service, tokenHash); err != nil {
+		return "", "", err
+	}
+	user, err := f.service.repo.GetUserInfo(ctx, refreshTokenModel.UserID)
+	if err != nil {
+		return "", "", err
+	}
+	newAccessToken, newRefereshToken, jti, newAccessExpire, newRefreshExpire, err := f.tokenGenerator.generateTokens(user.ID, user.Role)
+	if err != nil {
+		return "", "", err
+	}
+	tx, err := f.service.repo.BeginTx(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	newHashedToken := f.hasher.HashToken(newRefereshToken)
+	err = f.database.saveRefreshToken(ctx, f.service, tx, user.ID, newHashedToken, jti, newRefreshExpire)
+	if err != nil {
+		return "", "", err
+	}
+	defer func() {
+		f.database.rollBack(tx, err)
+	}()
+	if err = f.database.saveTokenToRedis(ctx, f.service, refreshToken, time.Until(newRefreshExpire)); err != nil {
+		return "", "", err
+	}
+	if err = f.database.saveTokenToRedis(ctx, f.service, newAccessToken, time.Until(newAccessExpire)); err != nil {
+		return "", "", err
+	}
+	return newAccessToken, newRefereshToken, err
+}
+
 type Database struct{}
 
-func (d *Database) saveTokenToRedis(ctx context.Context, s *Servise, tokenHash string, refreshExpire time.Duration) error {
-	return s.rcache.SaveToken(ctx, tokenHash, refreshExpire)
+func (d *Database) saveTokenToRedis(ctx context.Context, s *Servise, token string, refreshExpire time.Duration) error {
+	return s.rcache.SaveToken(ctx, token, refreshExpire)
 }
 
 func (d *Database) checkCredential(ctx context.Context, s *Servise, reqUsername, reqPassword string) (*models.User, error) {
@@ -92,12 +146,12 @@ func (d *Database) checkCredential(ctx context.Context, s *Servise, reqUsername,
 func (d *Database) saveNewUser(ctx context.Context, s *Servise, newUser *models.User) (int, *sql.Tx, error) {
 	userID, tx, err := s.CreateUser(ctx, newUser)
 	if err != nil {
-		return 0, tx, err
+		return 0, nil, err
 	}
 	return userID, tx, err
 }
 
-func (d *Database) saveRefreshToken(ctx context.Context, s *Servise, userID int, hashedToken, jti string, expiresAt time.Time) error {
+func (d *Database) saveRefreshToken(ctx context.Context, s *Servise, tx *sql.Tx, userID int, hashedToken, jti string, expiresAt time.Time) error {
 	t := models.RefreshToken{
 		Jti:       jti,
 		UserID:    userID,
@@ -105,17 +159,37 @@ func (d *Database) saveRefreshToken(ctx context.Context, s *Servise, userID int,
 		ExpiresAt: expiresAt,
 		Revoked:   false,
 	}
-	_, err := s.repo.InsertIntoRefreshTokenTable(ctx, &t)
+	_, err := s.repo.InsertIntoRefreshTokenTable(ctx, &t, tx)
 	if err != nil {
 		return err
+	}
+	return err
+}
+func (d *Database) getRefreshTokenModel(ctx context.Context, s *Servise, tokenHash string) (*models.RefreshToken, error) {
+	rTokenModel, err := s.repo.GetRefreshToken(ctx, tokenHash)
+	if err != nil {
+		return nil, err
+	}
+	return rTokenModel, err
+}
+
+func (d *Database) makeRefreshTokenRevoked(ctx context.Context, s *Servise, tokenHash string) error {
+	affrow, err := s.repo.MakeRefreshTokenRevoked(ctx, tokenHash)
+	if err != nil {
+		return err
+	}
+	if affrow == 0 {
+		return errors.New("no row was updated")
 	}
 	return err
 }
 
 func (d *Database) rollBack(tx *sql.Tx, registrationError error) {
 	if registrationError != nil {
+		fmt.Println("rolled back!")
 		tx.Rollback()
 	}
+	fmt.Println("comitted")
 	tx.Commit()
 }
 
@@ -164,11 +238,11 @@ func (t *TokenGenerator) getAccessT(privateKey *rsa.PrivateKey, userID int64, ro
 	return accessToken, accessExpire, err
 }
 
-func (t *TokenGenerator) getRefreshT(privateKey *rsa.PrivateKey, userID int64) (hashedToken string, jti string, refreshExpire time.Time, err error) {
-	refreshTokenDur := 7 * (24 * time.Hour)
+func (t *TokenGenerator) getRefreshT(privateKey *rsa.PrivateKey, userID int64) (refreshToken string, jti string, refreshExpire time.Time, err error) {
+	refreshTokenDur := 7 * 24 * time.Hour
 	auth := auth.NewAuthJWT(privateKey, "project3", refreshTokenDur)
 
-	refreshToken, jti, refreshExpire, err := auth.IssueRefreshToken(userID)
+	refreshToken, jti, refreshExpire, err = auth.IssueRefreshToken(userID)
 	if err != nil {
 		return "", "", time.Time{}, err
 	}

@@ -75,6 +75,7 @@ func main() {
 
 	r.POST("register", handler.Registration)
 	r.POST("auth", handler.Authentication)
+	r.POST("refresh", handler.RefreshTokenAuth)
 
 	// return id for each entity
 	r.GET("user-id", handler.GetUserID)

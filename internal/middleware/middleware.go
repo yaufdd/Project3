@@ -39,7 +39,7 @@ func (m *JWTMW) Handler() gin.HandlerFunc {
 			}
 			return m.publicKey, nil
 		}, jwt.WithIssuer(m.issuer))
-		if err != nil || !tok.Valid {
+		if err != nil || !tok.Valid || claims.Type == "refresh" {
 			exp, err := tok.Claims.GetExpirationTime()
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
